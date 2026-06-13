@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小说阅读器 - 系统架构图</title>
+<style>
+  :root {
+    --primary: #409eff;
+    --success: #67c23a;
+    --warning: #e6a23c;
+    --danger: #f56c6c;
+    --bg: #f8f9fb;
+    --card-bg: #fff;
+    --text: #303133;
+    --text-secondary: #606266;
+    --border: #e4e7ed;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* === Hero === */
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #fff;
+    text-align: center;
+    padding: 60px 20px 50px;
+  }
+  .hero h1 { font-size: 36px; margin-bottom: 8px; letter-spacing: 2px; }
+  .hero p  { font-size: 16px; color: #a0b4cc; }
+  .hero .badge-row { margin-top: 18px; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block; padding: 5px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+  }
+  .badge-vue  { background: #42b88333; color: #42b883; border: 1px solid #42b88355; }
+  .badge-nest { background: #e0234e33; color: #e0234e; border: 1px solid #e0234e55; }
+  .badge-mysql{ background: #00758f33; color: #5dbea3; border: 1px solid #5dbea355; }
+  .badge-ts   { background: #3178c633; color: #3178c6; border: 1px solid #3178c655; }
+
+  /* === Layout === */
+  .container { max-width: 1300px; margin: 0 auto; padding: 40px 24px; }
+  .section-title {
+    font-size: 24px; font-weight: 700; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--primary); display: inline-block;
+  }
+  .section-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 28px; }
+
+  /* === Architecture 整体架构 === */
+  .arch-layers {
+    display: flex; flex-direction: column; gap: 24px; align-items: center;
+  }
+  .arch-layer {
+    width: 100%; max-width: 1100px; border-radius: 16px;
+    padding: 28px 32px; position: relative;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .arch-layer .layer-tag {
+    position: absolute; top: -12px; left: 24px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    padding: 4px 14px; border-radius: 12px; letter-spacing: 1px;
+  }
+  .layer-frontend { background: #e6f7e6; border: 2px solid #b7eb8f; }
+  .layer-frontend .layer-tag { background: #67c23a; color: #fff; }
+  .layer-backend  { background: #e6f0fd; border: 2px solid #91caff; }
+  .layer-backend .layer-tag  { background: #409eff; color: #fff; }
+  .layer-data     { background: #fff7e6; border: 2px solid #ffd591; }
+  .layer-data .layer-tag     { background: #e6a23c; color: #fff; }
+
+  .layer-content { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 8px; }
+  .layer-box {
+    background: #fff; border-radius: 10px; padding: 18px 22px;
+    min-width: 120px; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    transition: transform 0.2s;
+  }
+  .layer-box:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .layer-box .icon { font-size: 28px; margin-bottom: 6px; }
+  .layer-box .name { font-weight: 600; font-size: 14px; }
+  .layer-box .desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* arrows between layers */
+  .arrow-down { text-align: center; font-size: 28px; color: #c0c4cc; margin: -8px 0; }
+
+  /* === Module Grid === */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+  }
+  .module-card {
+    background: var(--card-bg); border-radius: 12px; padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-left: 4px solid var(--primary);
+    transition: box-shadow 0.2s;
+  }
+  .module-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+  .module-card .mod-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .module-card .mod-name { font-size: 17px; font-weight: 700; }
+  .module-card .mod-badge {
+    font-size: 11px; padding: 2px 10px; border-radius: 10px;
+    background: #ecf5ff; color: var(--primary); font-weight: 600;
+  }
+  .module-card .mod-files { font-size: 13px; color: var(--text-secondary); }
+  .module-card .mod-files code {
+    background: #f5f7fa; padding: 1px 6px; border-radius: 3px;
+    font-size: 12px; margin: 2px 4px 2px 0; display: inline-block;
+  }
+  .module-card .mod-deps {
+    margin-top: 10px; font-size: 12px; color: var(--text-secondary);
+    border-top: 1px solid var(--border); padding-top: 10px;
+  }
+  .module-card .mod-deps span { font-weight: 600; }
+
+  /* === Database ER === */
+  .er-container {
+    display: flex; flex-wrap: wrap; gap: 24px; justify-content: center;
+  }
+  .er-table {
+    background: var(--card-bg); border-radius: 10px; overflow: hidden;
+    min-width: 240px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .er-table .tbl-name {
+    background: var(--primary); color: #fff; padding: 10px 16px;
+    font-weight: 700; font-size: 14px; text-align: center;
+  }
+  .er-table .tbl-cols { padding: 6px 0; }
+  .er-table .tbl-col {
+    padding: 5px 16px; font-size: 13px; border-bottom: 1px solid #f0f0f0;
+    display: flex; justify-content: space-between;
+  }
+  .er-table .tbl-col:last-child { border-bottom: none; }
+  .col-pk  { color: var(--warning); font-weight: 600; }
+  .col-fk  { color: var(--primary); }
+  .col-norm { color: var(--text-secondary); }
+
+  /* === API Routes === */
+  .api-section { margin-bottom: 32px; }
+  .api-section h4 {
+    font-size: 16px; margin-bottom: 10px; color: var(--primary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .api-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 8px; }
+  .api-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card-bg); padding: 8px 14px; border-radius: 6px;
+    font-size: 13px; font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  .api-method {
+    font-weight: 700; font-size: 11px; padding: 2px 8px; border-radius: 4px;
+    color: #fff; min-width: 42px; text-align: center;
+  }
+  .method-get    { background: var(--success); }
+  .method-post   { background: var(--primary); }
+  .method-put    { background: var(--warning); }
+  .method-delete { background: var(--danger); }
+
+  /* === Data Flow === */
+  .flow-row {
+    display: flex; align-items: center; gap: 16px; justify-content: center;
+    flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .flow-step {
+    background: var(--card-bg); border-radius: 10px; padding: 14px 20px;
+    text-align: center; min-width: 100px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    font-size: 13px; font-weight: 600;
+  }
+  .flow-arrow {
+    font-size: 22px; color: var(--primary); font-weight: 700;
+  }
+  .flow-group {
+    background: var(--card-bg); border-radius: 14px; padding: 20px 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 24px;
+  }
+  .flow-group h4 { margin-bottom: 14px; color: var(--primary); }
+
+  /* === Footer === */
+  .footer { text-align: center; padding: 40px; color: var(--text-secondary); font-size: 13px; }
+
+  /* === Responsive === */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 24px; }
+    .module-grid { grid-template-columns: 1fr; }
+    .api-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== HERO ====== -->
+<div class="hero">
+  <h1>📖 小说阅读器 · 系统架构图</h1>
+  <p>AI 驱动的多租户小说阅读平台 — 前端 Vue 3 + 后端 NestJS + MySQL</p>
+  <div class="badge-row">
+    <span class="badge badge-vue">Vue 3 + Vite</span>
+    <span class="badge badge-vue">Element Plus</span>
+    <span class="badge badge-vue">Pinia</span>
+    <span class="badge badge-nest">NestJS</span>
+    <span class="badge badge-nest">TypeORM</span>
+    <span class="badge badge-mysql">MySQL</span>
+    <span class="badge badge-ts">TypeScript</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ====== 1. 整体架构 ====== -->
+<h2 class="section-title"><span class="dot"></span>一、整体分层架构</h2>
+<p class="section-subtitle">前后端分离，三层架构：表示层（Vue SPA）→ 业务逻辑层（NestJS API）→ 数据层（MySQL）</p>
+
+<div class="arch-layers">
+  <!-- Frontend Layer -->
+  <div class="arch-layer layer-frontend">
+    <span class="layer-tag">表示层 Presentation</span>
+    <div class="layer-content">
+      <div class="layer-box"><div class="icon">🏠</div><div class="name">Home</div><div class="desc">首页/书架</div></div>
+      <div class="layer-box"><div class="icon">📖</div><div class="name">BookDetail</div><div class="desc">图书详情+目录</div></div>
+      <div class="layer-box"><div class="icon">📄</div><div class="name">ChapterRead</div><div class="desc">章节阅读器</div></div>
+      <div class="layer-box"><div class="icon">✍️</div><div class="name">WriterWorkspace</div><div class="desc">作家工作台</div></div>
+      <div class="layer-box"><div class="icon">⚙️</div><div class="name">Admin</div><div class="desc">后台管理</div></div>
+      <div class="layer-box"><div class="icon">🔐</div><div class="name">Login/Register</div><div class="desc">认证入口</div></div>
+    </div>
+    <div style="font-size:12px;color:#888;margin-top:14px;text-align:center;">
+      Vite dev server :5173 &nbsp;|&nbsp; axios 拦截器自动附加 JWT &nbsp;|&nbsp; Vue Router 路由守卫 &nbsp;|&nbsp; Pinia 状态管理
+    </div>
+  </div>
+
+  <div class="arrow-down">⬇ ⬆</div>
+  <div style="font-size:12px;color:#999;">HTTP REST · JSON · JWT Bearer Token · CORS</div>
+
+  <!-- Backend Layer -->
+  <div class="arch-layer layer-backend">
+    <span class="layer-tag">业务逻辑层 Business Logic</span>
+    <div class="layer-content">
+      <div class="layer-box"><div class="icon">👤</div><div class="name">Auth</div><div class="desc">认证/授权</div></div>
+      <div class="layer-box"><div class="icon">📚</div><div class="name">Books</div><div class="desc">图书管理</div></div>
+      <div class="layer-box"><div class="icon">📝</div><div class="name">Chapters</div><div class="desc">章节管理</div></div>
+      <div class="layer-box"><div class="icon">🔀</div><div class="name">IF Stories</div><div class="desc">IF线续写</div></div>
+      <div class="layer-box"><div class="icon">🤖</div><div class="name">AI</div><div class="desc">AI配置/吐槽</div></div>
+      <div class="layer-box"><div class="icon">📊</div><div class="name">Admin</div><div class="desc">统计/管理</div></div>
+      <div class="layer-box"><div class="icon">📈</div><div class="name">Writers</div><div class="desc">配额管理</div></div>
+    </div>
+    <div style="font-size:12px;color:#888;margin-top:14px;text-align:center;">
+      NestJS :3000 &nbsp;|&nbsp; TypeORM &nbsp;|&nbsp; JWT Strategy &nbsp;|&nbsp; OptionalAuthGuard &nbsp;|&nbsp; bcryptjs &nbsp;|&nbsp; AES-256-CBC
+    </div>
+  </div>
+
+  <div class="arrow-down">⬇ ⬆</div>
+  <div style="font-size:12px;color:#999;">TypeORM Entities · Repository Pattern · synchronize (dev)</div>
+
+  <!-- Data Layer -->
+  <div class="arch-layer layer-data">
+    <span class="layer-tag">数据层 Data</span>
+    <div class="layer-content">
+      <div class="layer-box"><div class="icon">🗄️</div><div class="name">MySQL</div><div class="desc">novel_reader</div></div>
+      <div class="layer-box"><div class="icon">📋</div><div class="name">7 张表</div><div class="desc">users / books / chapters ...</div></div>
+      <div class="layer-box"><div class="icon">🔐</div><div class="name">加密存储</div><div class="desc">bcrypt + AES</div></div>
+      <div class="layer-box"><div class="icon">📤</div><div class="name">文件上传</div><div class="desc">Multer · 500MB</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 2. 前端架构 ====== -->
+<h2 class="section-title" style="margin-top:56px;"><span class="dot"></span>二、前端架构</h2>
+<p class="section-subtitle">Vue 3 单页应用 — Composition API · Vite 构建 · Element Plus 组件库</p>
+
+<div class="module-grid">
+  <div class="module-card" style="border-left-color:#42b883;">
+    <div class="mod-header"><span class="mod-name">📦 App Shell</span><span class="mod-badge">入口</span></div>
+    <div class="mod-files">
+      <code>main.js</code> → 挂载 #app，注册 Router / Pinia<br>
+      <code>App.vue</code> → &lt;router-view&gt; 根组件
+    </div>
+  </div>
+  <div class="module-card" style="border-left-color:#409eff;">
+    <div class="mod-header"><span class="mod-name">🧭 Vue Router</span><span class="mod-badge">路由</span></div>
+    <div class="mod-files">
+      <code>router/index.js</code> — 11 条路由
+    </div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;">
+      <strong>公开路由：</strong>/ /login /register /book/:id /chapter/:id<br>
+      <strong>需认证：</strong>/writer &nbsp; /admin/*<br>
+      <strong>守卫：</strong>beforeEach 检查 token ↔ role，admin 路由校验 role=admin
+    </div>
+  </div>
+  <div class="module-card" style="border-left-color:#e6a23c;">
+    <div class="mod-header"><span class="mod-name">🗃️ Pinia Store</span><span class="mod-badge">状态管理</span></div>
+    <div class="mod-files"><code>store/user.js</code> — userStore</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;">
+      State: user / token · Getters: isLoggedIn / isAdmin<br>
+      Actions: login / register / logout / restoreUser<br>
+      持久化: token → localStorage
+    </div>
+  </div>
+  <div class="module-card" style="border-left-color:#f56c6c;">
+    <div class="mod-header"><span class="mod-name">📡 API Layer</span><span class="mod-badge">通信</span></div>
+    <div class="mod-files"><code>api/index.js</code> — axios 实例</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;">
+      baseURL: localhost:3000 · timeout: 10s<br>
+      请求拦截: 自动注入 Bearer token<br>
+      响应拦截: 401 → 清除 token 跳转 /login
+    </div>
+  </div>
+  <div class="module-card" style="border-left-color:#67c23a;">
+    <div class="mod-header"><span class="mod-name">📱 页面组件</span><span class="mod-badge">Views</span></div>
+    <div class="mod-files" style="line-height:2;">
+      <code>Home.vue</code> 书架首页<br>
+      <code>BookDetail.vue</code> 图书详情+继续阅读<br>
+      <code>ChapterRead.vue</code> 阅读器（markdown/设置/TOC/IF线/吐槽）<br>
+      <code>WriterWorkspace.vue</code> 作家工作台<br>
+      <code>Login.vue</code> <code>Register.vue</code> 认证页<br>
+      <code>Admin.vue</code> 后台布局<br>
+      <code>AdminBooks.vue</code> <code>AdminChapters.vue</code> <code>AdminIfStories.vue</code> <code>AdminAIConfig.vue</code> <code>AdminStats.vue</code>
+    </div>
+  </div>
+  <div class="module-card" style="border-left-color:#409eff;">
+    <div class="mod-header"><span class="mod-name">🧩 共享组件</span><span class="mod-badge">Components</span></div>
+    <div class="mod-files">
+      <code>ChapterManager.vue</code> — 章节 CRUD + 上传 + 滚动分页<br>
+      被 WriterWorkspace / AdminChapters 复用
+    </div>
+  </div>
+</div>
+
+<!-- ====== 3. 后端架构 ====== -->
+<h2 class="section-title" style="margin-top:56px;"><span class="dot"></span>三、后端模块架构</h2>
+<p class="section-subtitle">NestJS 模块化设计，每个模块独立包含 Controller / Service / Entity</p>
+
+<div class="module-grid">
+  <div class="module-card">
+    <div class="mod-header"><span class="mod-name">🔐 Auth 模块</span><span class="mod-badge">认证</span></div>
+    <div class="mod-files">
+      <code>auth.controller</code> <code>auth.service</code> <code>auth.module</code> <code>jwt.strategy</code>
+    </div>
+    <div class="mod-deps">
+      <span>依赖：</span>UsersModule · JwtModule · PassportModule<br>
+      <span>接口：</span>POST /api/auth/register · POST /api/auth/login<br>
+      <span>安全：</span>bcrypt 密码哈希(cost=10) · JWT 7天有效期 · 密钥: novel-reader-secret-key
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="mod-header"><span class="mod-name">📚 Books 模块</span><span class="mod-badge">图书</span></div>
+    <div class="mod-files">
+      <code>books.controller</code> <code>books.service</code> <code>book.entity</code>
+    </div>
+    <div class="mod-deps">
+      <span>依赖：</span>TypeORM Book Repository<br>
+      <span>接口：</span>GET/POST /api/books · GET/PUT/DELETE /api/books/:id<br>
+      <span>权限：</span>OptionalAuthGuard · findAll 区分 admin/owner/guest
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="mod-header"><span class="mod-name">📝 Chapters 模块</span><span class="mod-badge">章节</span></div>
+    <div class="mod-files">
+      <code>chapters.controller</code> <code>chapters.service</code> <code>chapter.entity</code> <code>doc-parser.utils</code>
+    </div>
+    <div class="mod-deps">
+      <span>依赖：</span>Book · IfStory · WritersModule<br>
+      <span>接口：</span>GET books/:id/chapters · GET/POST/PUT/DELETE chapters · POST chapters/upload · POST chapters/batch<br>
+      <span>功能：</span>MK/TXT文档解析 · 章节序号自动重排 · 500MB上传 · 每日配额检查
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="mod-header"><span class="mod-name">🔀 IF Stories 模块</span><span class="mod-badge">IF线</span></div>
+    <div class="mod-files">
+      <code>if-stories.controller</code> <code>if-stories.service</code> <code>if-story.entity</code>
+    </div>
+    <div class="mod-deps">
+      <span>依赖：</span>AiService · ChaptersService<br>
+      <span>接口：</span>POST generate · POST submit · GET chapter/:id · POST tip/like · GET ranking · GET pending · PUT review<br>
+      <span>状态机：</span>pending → approved / rejected
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="mod-header"><span class="mod-name">🤖 AI 模块</span><span class="mod-badge">AI配置</span></div>
+    <div class="mod-files">
+      <code>ai.controller</code> <code>ai.service</code> <code>ai-config.entity</code>
+    </div>
+    <div class="mod-deps">
+      <span>依赖：</span>ChaptersService<br>
+      <span>接口：</span>GET/POST config · POST generate-if-story · POST chat · GET features<br>
+      <span>安全：</span>apiKey AES-256-CBC 加解密 · ifEnabled/chatEnabled 功能开关
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="mod-header"><span class="mod-name">👤 Users 模块</span><span class="mod-badge">用户</span></div>
+    <div class="mod-files">
+      <code>users.service</code> <code>user.entity</code> <code>user-point.entity</code>
+    </div>
+    <div class="mod-deps">
+      <span>实体：</span>User (id/phone/passwordHash/role) · UserPoint (userId/points)<br>
+      <span>功能：</span>注册赠送100积分 · 手机号待AES加密
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="mod-header"><span class="mod-name">📈 Writers 模块</span><span class="mod-badge">作家配额</span></div>
+    <div class="mod-files">
+      <code>writers.controller</code> <code>writers.service</code> <code>writer-daily-upload.entity</code>
+    </div>
+    <div class="mod-deps">
+      <span>接口：</span>GET /api/writer/upload-stats<br>
+      <span>限制：</span>普通用户10章/天 · 管理员无限制
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="mod-header"><span class="mod-name">📊 Admin 模块</span><span class="mod-badge">管理</span></div>
+    <div class="mod-files">
+      <code>admin.controller</code> <code>admin.service</code>
+    </div>
+    <div class="mod-deps">
+      <span>接口：</span>GET /api/admin/stats<br>
+      <span>统计：</span>图书数 · 章节数 · 用户数 · IF线数 · 待审核数
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="mod-header"><span class="mod-name">🛡️ 公共模块</span><span class="mod-badge">Common</span></div>
+    <div class="mod-files">
+      <code>guards/optional-auth.guard</code> <code>decorators/current-user.decorator</code><br>
+      <code>crypto.utils</code> <code>doc-parser.utils</code>
+    </div>
+    <div class="mod-deps">
+      <span>OptionalAuthGuard：</span>提取JWT但不强制，未登录也可访问<br>
+      <span>doc-parser：</span>MD严格模式(#前缀) / TXT宽松模式 章节拆分
+    </div>
+  </div>
+</div>
+
+<!-- ====== 4. 数据库 ER 图 ====== -->
+<h2 class="section-title" style="margin-top:56px;"><span class="dot"></span>四、数据库实体关系</h2>
+<p class="section-subtitle">MySQL · TypeORM synchronize · 7 张业务表</p>
+
+<div class="er-container">
+  <div class="er-table">
+    <div class="tbl-name">📘 books (图书)</div>
+    <div class="tbl-cols">
+      <div class="tbl-col"><span>🔑 id</span><span class="col-pk">INT PK</span></div>
+      <div class="tbl-col"><span>title</span><span class="col-norm">VARCHAR(255)</span></div>
+      <div class="tbl-col"><span>author</span><span class="col-norm">VARCHAR(100)</span></div>
+      <div class="tbl-col"><span>coverUrl</span><span class="col-norm">VARCHAR(500)</span></div>
+      <div class="tbl-col"><span>filePath</span><span class="col-norm">AES加密</span></div>
+      <div class="tbl-col"><span>description</span><span class="col-norm">TEXT</span></div>
+      <div class="tbl-col"><span>isActive</span><span class="col-norm">BOOL 上/下架</span></div>
+      <div class="tbl-col"><span>🔗 userId</span><span class="col-fk">FK → users</span></div>
+      <div class="tbl-col"><span>createdAt</span><span class="col-norm">TIMESTAMP</span></div>
+    </div>
+  </div>
+
+  <div class="er-table">
+    <div class="tbl-name">📄 chapters (章节)</div>
+    <div class="tbl-cols">
+      <div class="tbl-col"><span>🔑 id</span><span class="col-pk">INT PK</span></div>
+      <div class="tbl-col"><span>🔗 bookId</span><span class="col-fk">FK → books</span></div>
+      <div class="tbl-col"><span>chapterNum</span><span class="col-norm">INT 序号</span></div>
+      <div class="tbl-col"><span>title</span><span class="col-norm">VARCHAR(255)</span></div>
+      <div class="tbl-col"><span>content</span><span class="col-norm">TEXT</span></div>
+      <div class="tbl-col"><span>wordCount</span><span class="col-norm">INT ≥2000</span></div>
+      <div style="background:#ecf5ff;font-size:11px;padding:4px 16px;">🔒 UNIQUE (bookId, chapterNum)</div>
+    </div>
+  </div>
+
+  <div class="er-table">
+    <div class="tbl-name">👤 users (用户)</div>
+    <div class="tbl-cols">
+      <div class="tbl-col"><span>🔑 id</span><span class="col-pk">INT PK</span></div>
+      <div class="tbl-col"><span>phone</span><span class="col-norm">VARCHAR UNIQUE</span></div>
+      <div class="tbl-col"><span>passwordHash</span><span class="col-norm">bcrypt</span></div>
+      <div class="tbl-col"><span>role</span><span class="col-norm">user/admin</span></div>
+      <div class="tbl-col"><span>createdAt</span><span class="col-norm">TIMESTAMP</span></div>
+    </div>
+  </div>
+
+  <div class="er-table">
+    <div class="tbl-name">🔀 if_stories (IF线)</div>
+    <div class="tbl-cols">
+      <div class="tbl-col"><span>🔑 id</span><span class="col-pk">INT PK</span></div>
+      <div class="tbl-col"><span>🔗 bookId</span><span class="col-fk">FK → books</span></div>
+      <div class="tbl-col"><span>🔗 chapterId</span><span class="col-fk">FK → chapters</span></div>
+      <div class="tbl-col"><span>🔗 userId</span><span class="col-fk">FK → users</span></div>
+      <div class="tbl-col"><span>source</span><span class="col-norm">ai/reader</span></div>
+      <div class="tbl-col"><span>status</span><span class="col-norm">pending/approved/rejected</span></div>
+      <div class="tbl-col"><span>content</span><span class="col-norm">TEXT</span></div>
+      <div class="tbl-col"><span>tipsCount</span><span class="col-norm">INT 打赏</span></div>
+      <div class="tbl-col"><span>likesCount</span><span class="col-norm">INT 点赞</span></div>
+    </div>
+  </div>
+
+  <div class="er-table">
+    <div class="tbl-name">💰 user_points (积分)</div>
+    <div class="tbl-cols">
+      <div class="tbl-col"><span>🔑 id</span><span class="col-pk">INT PK</span></div>
+      <div class="tbl-col"><span>🔗 userId</span><span class="col-fk">FK UNIQUE → users</span></div>
+      <div class="tbl-col"><span>points</span><span class="col-norm">INT 0</span></div>
+      <div class="tbl-col"><span>updatedAt</span><span class="col-norm">TIMESTAMP</span></div>
+    </div>
+  </div>
+
+  <div class="er-table">
+    <div class="tbl-name">📊 writer_daily_uploads</div>
+    <div class="tbl-cols">
+      <div class="tbl-col"><span>🔑 id</span><span class="col-pk">INT PK</span></div>
+      <div class="tbl-col"><span>🔗 userId</span><span class="col-fk">FK → users</span></div>
+      <div class="tbl-col"><span>uploadDate</span><span class="col-norm">DATE</span></div>
+      <div class="tbl-col"><span>chapterCount</span><span class="col-norm">INT 当日上传</span></div>
+    </div>
+  </div>
+
+  <div class="er-table">
+    <div class="tbl-name">⚙️ ai_config (AI配置)</div>
+    <div class="tbl-cols">
+      <div class="tbl-col"><span>🔑 id</span><span class="col-pk">INT PK</span></div>
+      <div class="tbl-col"><span>apiKey</span><span class="col-norm">AES加密</span></div>
+      <div class="tbl-col"><span>modelName</span><span class="col-norm">deepseek/mimo</span></div>
+      <div class="tbl-col"><span>promptTemplate</span><span class="col-norm">TEXT</span></div>
+      <div class="tbl-col"><span>isActive</span><span class="col-norm">BOOL</span></div>
+      <div class="tbl-col"><span>ifEnabled</span><span class="col-norm">BOOL IF开关</span></div>
+      <div class="tbl-col"><span>chatEnabled</span><span class="col-norm">BOOL 吐槽开关</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 5. API 路由全景 ====== -->
+<h2 class="section-title" style="margin-top:56px;"><span class="dot"></span>五、API 路由全景</h2>
+<p class="section-subtitle">Base URL: http://localhost:3000 · JSON · JWT Bearer Token</p>
+
+<div class="api-section">
+  <h4>🔐 认证 Auth</h4>
+  <div class="api-grid">
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/auth/register</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/auth/login</div>
+  </div>
+</div>
+
+<div class="api-section">
+  <h4>📚 图书 Books</h4>
+  <div class="api-grid">
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/books</div>
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/books/:id</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/books</div>
+    <div class="api-item"><span class="api-method method-put">PUT</span> /api/books/:id</div>
+    <div class="api-item"><span class="api-method method-delete">DELETE</span> /api/books/:id</div>
+  </div>
+</div>
+
+<div class="api-section">
+  <h4>📝 章节 Chapters</h4>
+  <div class="api-grid">
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/books/:bookId/chapters</div>
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/chapters/:id</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/chapters</div>
+    <div class="api-item"><span class="api-method method-put">PUT</span> /api/chapters/:id</div>
+    <div class="api-item"><span class="api-method method-delete">DELETE</span> /api/chapters/:id</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/chapters/upload</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/chapters/batch</div>
+  </div>
+</div>
+
+<div class="api-section">
+  <h4>🔀 IF线 IF Stories</h4>
+  <div class="api-grid">
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/if-stories/generate</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/if-stories/submit</div>
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/if-stories/chapter/:chapterId</div>
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/if-stories/ranking</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/if-stories/:id/tip</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/if-stories/:id/like</div>
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/if-stories/pending</div>
+    <div class="api-item"><span class="api-method method-put">PUT</span> /api/if-stories/:id/review</div>
+  </div>
+</div>
+
+<div class="api-section">
+  <h4>🤖 AI</h4>
+  <div class="api-grid">
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/ai/config</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/ai/config</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/ai/generate-if-story</div>
+    <div class="api-item"><span class="api-method method-post">POST</span> /api/ai/chat</div>
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/ai/features</div>
+  </div>
+</div>
+
+<div class="api-section">
+  <h4>📈📊 作家 & 管理</h4>
+  <div class="api-grid">
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/writer/upload-stats</div>
+    <div class="api-item"><span class="api-method method-get">GET</span> /api/admin/stats</div>
+  </div>
+</div>
+
+<!-- ====== 6. 核心数据流 ====== -->
+<h2 class="section-title" style="margin-top:56px;"><span class="dot"></span>六、核心业务流程</h2>
+<p class="section-subtitle">关键用户操作的数据流与模块交互</p>
+
+<div class="flow-group">
+  <h4>📖 读者阅读流程</h4>
+  <div class="flow-row">
+    <div class="flow-step">👤 用户访问<br>/book/:id</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">GET /api/books/:id<br><small>BooksController.findById</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">GET chapters<br><small>Chapters.findByBookId</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">📄 显示图书详情<br>+ 目录列表</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-step">👆 点击某章</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">GET /api/chapters/:id<br><small>检查 book.isActive</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">marked() 渲染<br>Markdown → HTML</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">💾 localStorage<br>reading_progress_{bookId}</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-step" style="border:2px dashed var(--warning);">📜 滚到底部<br>(最后一章)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border:2px dashed var(--warning);">IF 弹窗<br>check ifEnabled</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border:2px dashed var(--warning);">POST /api/if-stories<br>/generate</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border:2px dashed var(--warning);">AI 生成内容<br>status: pending</div>
+  </div>
+</div>
+
+<div class="flow-group">
+  <h4>✍️ 作家上传章节流程</h4>
+  <div class="flow-row">
+    <div class="flow-step">📤 选择 .md/.txt 文件</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">POST /api/chapters/upload<br><small>Multer 500MB · 队列串行</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">📋 doc-parser.utils<br><small>MD严格模式 / TXT宽松</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">📊 解析预览<br>章节列表 + 开关</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-step">✅ 选择章节 → 导入</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">POST /api/chapters/batch<br><small>checkUploadLimit</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">ChaptersService.create<br><small>序号移位 + 批量插入</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">recordUpload<br><small>写入每日配额</small></div>
+  </div>
+</div>
+
+<div class="flow-group">
+  <h4>🛡️ 权限控制流</h4>
+  <div class="flow-row">
+    <div class="flow-step">🔓 未登录</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:#e6f7e6;">GET /api/books<br>isActive=true 全部上架书</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:#fff1f0;">GET /api/books/:id<br>下架书 → 404</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-step">👤 普通用户</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:#e6f7e6;">GET /api/books<br>上架书 OR 自己的书</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:#e6f7e6;">WriterWorkspace<br>过滤 userId === 自己</div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-step">👑 Admin</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:#e6f0fd;">GET /api/books<br>全部书（含下架）</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:#e6f0fd;">findById 不受限<br>可操作所有书</div>
+  </div>
+</div>
+
+<!-- ====== 7. 关键技术细节 ====== -->
+<h2 class="section-title" style="margin-top:56px;"><span class="dot"></span>七、关键技术细节</h2>
+<p class="section-subtitle">安全、性能、工程化要点</p>
+
+<div class="module-grid">
+  <div class="module-card" style="border-left-color:var(--danger);">
+    <div class="mod-header"><span class="mod-name">🔒 安全</span></div>
+    <div style="font-size:13px;line-height:2;">
+      • 密码 bcrypt (cost=10) 哈希存储<br>
+      • JWT 7天过期 · 前端 localStorage 持久化<br>
+      • 敏感字段 AES-256-CBC 加密（apiKey / filePath / phone 待实现）<br>
+      • 路由守卫：token校验 + role校验 (admin路由)<br>
+      • 下架书隔离：未登录/非作者 不可见
+    </div>
+  </div>
+
+  <div class="module-card" style="border-left-color:var(--warning);">
+    <div class="mod-header"><span class="mod-name">⚡ 性能</span></div>
+    <div style="font-size:13px;line-height:2;">
+      • 章节列表滚动分页 (50条/批次)<br>
+      • axios timeout 10s<br>
+      • 文件上传串行队列 (避免并发序号错乱)<br>
+      • marked 客户端 Markdown 渲染<br>
+      • 阅读设置 localStorage 缓存
+    </div>
+  </div>
+
+  <div class="module-card" style="border-left-color:var(--success);">
+    <div class="mod-header"><span class="mod-name">🏗️ 工程化</span></div>
+    <div style="font-size:13px;line-height:2;">
+      • Vite HMR 开发服务器 · NestJS watch 模式<br>
+      • TypeORM synchronize:true (开发环境)<br>
+      • ESLint + Prettier (后端)<br>
+      • CORS: localhost:5173<br>
+      • Body parser 500MB 限制
+    </div>
+  </div>
+
+  <div class="module-card" style="border-left-color:var(--primary);">
+    <div class="mod-header"><span class="mod-name">📐 设计模式</span></div>
+    <div style="font-size:13px;line-height:2;">
+      • NestJS 模块化 · Controller-Service-Entity<br>
+      • TypeORM Repository Pattern<br>
+      • Pinia Composition API Store<br>
+      • Vue 3 Composition API (script setup)<br>
+      • OptionalAuthGuard: 认证可选，未登录也能访问
+    </div>
+  </div>
+</div>
+
+</div><!-- .container -->
+
+<div class="footer">
+  小说阅读器 Architecture Overview · 生成于 2026-06-13 · Vue 3 + NestJS + MySQL
+</div>
+
+</body>
+</html>
